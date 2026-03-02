@@ -1,6 +1,5 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
-from openclaw import Agent
 from agent.controller import Agent
 
 app = FastAPI(
