@@ -133,22 +133,6 @@ Open in browser: http://localhost:8000/docs
 
 ---
 
-## 📈 Future Roadmap
-
-| Feature | Description |
-|---|---|
-| 🔍 Web Search Tool | Add DuckDuckGo or Brave Search API tool |
-| 🧠 Vector DB Memory | Use ChromaDB or Pinecone for long-term memory |
-| 🤖 Multi-Agent | Add planner + executor agents working together |
-| 🌊 Streaming | Stream agent thoughts in real time via SSE |
-| 🐳 Docker | Containerize with Dockerfile + docker-compose |
-| 💰 Cost Tracking | Log token usage and estimated costs per run |
-| 🔁 Self-Debugging | Auto-retry on code errors with reflection |
-| 🖥 Dashboard | React/Next.js frontend to chat with agent |
-
----
-
-## 🔒 Security Notes
 
 - Python code runs via subprocess with a 10s timeout
 - File writes are restricted to `./output/` directory
