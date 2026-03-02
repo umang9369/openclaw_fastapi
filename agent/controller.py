@@ -50,7 +50,35 @@ class Agent:
                 tool_choice="auto"
             )
             #memory call hoga by llm
+            if finish_reason == "stop" or not message.get("tool_calls"):
+                final_text = message.get("content") or "Task completed."
+                print(f"[Agent] Final answer reached.")
+                return final_text
+            #final answer comes here
 
-            
+            tool_calls = message.get("tool_calls", [])
 
-            self.memory.add("assistant",)
+            self.memory.add_raw(message)  #this add everything into memory.
+
+            for tool_call in tool_calls:
+                tool_name = tool_call["function"]["name"]
+                tool_call_id = tool_call["id"]
+
+                # Safely parse arguments
+                try:
+                    args = json.loads(tool_call["function"]["arguments"])
+                except json.JSONDecodeError:
+                    args = {}
+
+                print(f"[Agent] Calling tool: {tool_name} | args: {args}")
+
+                #Execute Tool 
+                tool_result = self._execute_tool(tool_name, args)
+                print(f"[Agent] Tool result: {tool_result[:200]}...")
+in
+                # Store tool result by making it in OpenAI tool format
+                self.memory.add_raw({
+                    "role": "tool",
+                    "tool_call_id": tool_call_id,
+                    "content": tool_result,
+                })
