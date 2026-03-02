@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
+from openclaw import Agent
 
 app = FastAPI(
     title="OpenClaw FastAPI",
@@ -32,3 +33,12 @@ async def run_agent(request: AgentRequest):
         return AgentResponse(response=result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/health")
+async def health():
+    """
+    Health check endpoint
+
+    """
+    return {"status": "ok", "agent": "OpenClaw v1.0"}
