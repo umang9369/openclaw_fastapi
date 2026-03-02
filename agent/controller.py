@@ -72,13 +72,32 @@ class Agent:
 
                 print(f"[Agent] Calling tool: {tool_name} | args: {args}")
 
-                #Execute Tool 
+                # ── Execute Tool ──────────────────────────────────────────────
                 tool_result = self._execute_tool(tool_name, args)
                 print(f"[Agent] Tool result: {tool_result[:200]}...")
-in
-                # Store tool result by making it in OpenAI tool format
+
+                # Store tool result in memory in OpenAI tool format
                 self.memory.add_raw({
                     "role": "tool",
                     "tool_call_id": tool_call_id,
                     "content": tool_result,
                 })
+            
+            self.memory.add(
+                "assistant",
+                message["content"]
+            )
+
+        return "Max iterations reached without a final answer."
+    
+    def _execute_tool(self, tool_name: str, args: dict) -> str:
+        """Execute a tool by name."""
+        if tool_name == "run_python":
+            return run_python(args.get("code", ""))
+        elif tool_name == "write_file":
+            return write_file(
+                filename=args.get("filename", "output.txt"),
+                content=args.get("content", ""),
+            )
+        else:
+            return f"ERROR: Unknown tool '{tool_name}'."
