@@ -1,70 +1,45 @@
-"""
-Controller for the OpenClaw Agent
-
-This is the core ReAct agent loop.
-matlab 1- call krega llm ko with prompt// 2- llm decide krega ki kis tool ko use krke kya krwana h
-and then in last agent(tool execute hoga) final answer llm ko return krega
-
-"""
 import json
-from typing import Optional
-
 from agent.memory import Memory
-from agent.prompts import SYSTEM_PROMPT,TOOLS
-from services.openrouter_client import call_llm
+from agent.prompts import SYSTEM_PROMPT, TOOLS
+from services.gemini_client import call_llm
 from tools.python_tool import run_python
 from tools.file_tool import write_file
 
-MAX_ITERATIONS = 10 
-#just to prevent it from going into infinite loop
+MAX_ITERATIONS = 10
 
 class Agent:
-    """
-    OpenClaw ReAct Agent.
-    Reasons, acts with tools, observes results, and loops until done.
-    """
     def __init__(self):
-        self.memory=Memory()
-        
-    async def run (self , user_goal : str) -> str:
-        """
-        Run the agent loop for a given user goal.
+        self.memory = Memory()
 
-        Args:
-            user_goal: Natural language task description from the user.
-
-        Returns:
-            The agent's final answer as a string.
-        """
+    async def run(self, user_goal: str) -> str:
         self.memory.clear()
+        self.memory.add("system", SYSTEM_PROMPT)
+        self.memory.add("user", user_goal)
 
-        self.memory.add("system",SYSTEM_PROMPT)
-        self.memory.add("user",user_goal)
+        for iteration in range(1, MAX_ITERATIONS + 1):
+            print(f"\n[Agent] Iteration {iteration}/{MAX_ITERATIONS}")
 
-        for iteration in range(1,MAX_ITERATIONS+1):
-            printf(f"\n[agent] iteration {iteration}/{MAX_ITERATIONS}")
-            
-            response=await call_llm(
-                messages=self.memory.get_messages(),
+            response = await call_llm(
+                messages=self.memory.get(),
                 tools=TOOLS,
-                tool_choice="auto"
             )
-            #memory call hoga by llm
+
+            choice = response.get("choices", [{}])[0]
+            message = choice.get("message", {})
+            finish_reason = choice.get("finish_reason", "")
+
             if finish_reason == "stop" or not message.get("tool_calls"):
                 final_text = message.get("content") or "Task completed."
                 print(f"[Agent] Final answer reached.")
                 return final_text
-            #final answer comes here
 
             tool_calls = message.get("tool_calls", [])
-
-            self.memory.add_raw(message)  #this add everything into memory.
+            self.memory.add_raw(message)
 
             for tool_call in tool_calls:
                 tool_name = tool_call["function"]["name"]
                 tool_call_id = tool_call["id"]
 
-                # Safely parse arguments
                 try:
                     args = json.loads(tool_call["function"]["arguments"])
                 except json.JSONDecodeError:
@@ -72,26 +47,27 @@ class Agent:
 
                 print(f"[Agent] Calling tool: {tool_name} | args: {args}")
 
-                # ── Execute Tool ──────────────────────────────────────────────
-                tool_result = self._execute_tool(tool_name, args)
-                print(f"[Agent] Tool result: {tool_result[:200]}...")
+                try:
+                    tool_result = self._execute_tool(tool_name, args)
+                except Exception as e:
+                    tool_result = f"Tool error: {str(e)}"
 
-                # Store tool result in memory in OpenAI tool format
+                print(f"[Agent] Tool result: {tool_result[:200]}")
+
                 self.memory.add_raw({
                     "role": "tool",
                     "tool_call_id": tool_call_id,
                     "content": tool_result,
                 })
-            
+
             self.memory.add(
-                "assistant",
-                message["content"]
+                "user",
+                "Reflect on the tool result. Is the task complete? If yes, give your final answer."
             )
 
         return "Max iterations reached without a final answer."
-    
+
     def _execute_tool(self, tool_name: str, args: dict) -> str:
-        """Execute a tool by name."""
         if tool_name == "run_python":
             return run_python(args.get("code", ""))
         elif tool_name == "write_file":

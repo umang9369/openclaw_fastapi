@@ -27,7 +27,7 @@ async def run_agent(request: AgentRequest):
     if not request.goal.strip():
         raise HTTPException(status_code=400, detail="Goal cannot be empty")
 
-    agent = Agent(goal=request.goal)
+    agent = Agent()
     try:
         result = await agent.run(user_goal=request.goal)
         return AgentResponse(response=result)
