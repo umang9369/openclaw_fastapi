@@ -28,21 +28,25 @@ class Agent:
             message = choice.get("message", {})
             finish_reason = choice.get("finish_reason", "")
 
+            content = message.get("content") or ""
+
             if finish_reason == "stop" or not message.get("tool_calls"):
-                final_text = message.get("content") or "Task completed."
+                final_text = content or "Task completed."
                 print(f"[Agent] Final answer reached.")
                 return final_text
 
             tool_calls = message.get("tool_calls", [])
-            self.memory.add_raw(message)
+            # Store the assistant reply as an assistant message
+            if content:
+                self.memory.add("assistant", content)
 
+            tool_results_summary = []
             for tool_call in tool_calls:
                 tool_name = tool_call["function"]["name"]
-                tool_call_id = tool_call["id"]
 
                 try:
                     args = json.loads(tool_call["function"]["arguments"])
-                except json.JSONDecodeError:
+                except (json.JSONDecodeError, KeyError):
                     args = {}
 
                 print(f"[Agent] Calling tool: {tool_name} | args: {args}")
@@ -52,17 +56,19 @@ class Agent:
                 except Exception as e:
                     tool_result = f"Tool error: {str(e)}"
 
+                # Ensure tool_result is always a string
+                tool_result = str(tool_result)
                 print(f"[Agent] Tool result: {tool_result[:200]}")
+                tool_results_summary.append(
+                    f"Tool `{tool_name}` result:\n{tool_result}"
+                )
 
-                self.memory.add_raw({
-                    "role": "tool",
-                    "tool_call_id": tool_call_id,
-                    "content": tool_result,
-                })
-
+            # Gemini doesn't support role="tool"; inject results as a user message
+            combined = "\n\n".join(tool_results_summary)
             self.memory.add(
                 "user",
-                "Reflect on the tool result. Is the task complete? If yes, give your final answer."
+                f"{combined}\n\nReflect on the tool result(s). Is the task complete? "
+                "If yes, give your final answer.",
             )
 
         return "Max iterations reached without a final answer."
