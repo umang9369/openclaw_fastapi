@@ -1,5 +1,5 @@
 import asyncio
-from services.openrouter_client import call_llm
+from services.gemini_client import call_llm
 
 async def main():
     try:
