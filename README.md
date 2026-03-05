@@ -1,6 +1,6 @@
 # 🦾 OpenClaw — Autonomous ReAct AI Agent
 
-An autonomous AI agent built with **FastAPI**, **OpenRouter**, and the **ReAct** (Reason → Act → Observe) loop. It can run Python code, write files, and solve complex goals step by step.
+An autonomous AI agent built with **FastAPI**, **Google Gemini**, and the **ReAct** (Reason → Act → Observe) loop. It can run Python code, write files, and solve complex goals step by step.
 
 ---
 
@@ -24,7 +24,7 @@ User Request (HTTP POST)
     │         │
     ▼         ▼
  Memory     LLM Call
- (memory.py) (openrouter_client.py)
+ (memory.py) (gemini_client.py)
               │
               ▼
          Tool Calls?
@@ -56,7 +56,7 @@ openclaw_fastapi/
 │   └── prompts.py             # System prompt + tool definitions
 │
 ├── services/
-│   └── openrouter_client.py   # Async OpenRouter API client
+│   └── gemini_client.py       # Async Google Gemini API client
 │
 └── tools/
     ├── python_tool.py         # Executes Python via subprocess
@@ -91,8 +91,16 @@ pip install -r requirements.txt
 
 ```bash
 cp .env.example .env
-# Edit .env and add your OpenRouter API key
+# Edit .env and add your Google Gemini API key
 ```
+
+Your `.env` should look like:
+
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+You can get a free API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
 
 ### 5. Run the server
 
@@ -102,30 +110,11 @@ uvicorn main:app --reload --port 8000
 
 ---
 
-## 🧪 Test the API
-
-### Health check
-```bash
-curl http://localhost:8000/health
-```
-
-### Run the agent
-```bash
-curl -X POST http://localhost:8000/run-agent \
-  -H "Content-Type: application/json" \
-  -d '{"goal": "Write python code to print fibonacci series up to 10 numbers and execute it"}'
-```
-
-### Interactive API Docs
-Open in browser: http://localhost:8000/docs
-
----
-
 ## 🔄 How It Works
 
 1. You send a `POST /run-agent` request with a `goal`
 2. The agent adds the system prompt + your goal to memory
-3. It calls the LLM (via OpenRouter)
+3. It calls the LLM (via Google Gemini)
 4. If the LLM wants to use a tool (e.g. `run_python`), the agent executes it
 5. The result is stored in memory
 6. The loop repeats until the LLM gives a final answer
@@ -133,6 +122,7 @@ Open in browser: http://localhost:8000/docs
 
 ---
 
+## 🔒 Security Notes
 
 - Python code runs via subprocess with a 10s timeout
 - File writes are restricted to `./output/` directory

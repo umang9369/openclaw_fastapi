@@ -4,7 +4,7 @@ from agent.controller import Agent
 
 app = FastAPI(
     title="OpenClaw FastAPI",
-    description="An Autonomous Agent System for OpenRouter using Fastapi",
+    description="An Autonomous Agent System with gemini using Fastapi",
     version="1.0.0",
 )
 

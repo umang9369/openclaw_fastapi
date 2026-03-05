@@ -42,11 +42,12 @@ class Agent:
 
             tool_results_summary = []
             for tool_call in tool_calls:
-                tool_name = tool_call["function"]["name"]
+                fn_info = tool_call.get("function", {})
+                tool_name = fn_info.get("name", "unknown_tool")
 
                 try:
-                    args = json.loads(tool_call["function"]["arguments"])
-                except (json.JSONDecodeError, KeyError):
+                    args = json.loads(fn_info.get("arguments", "{}"))
+                except (json.JSONDecodeError, TypeError):
                     args = {}
 
                 print(f"[Agent] Calling tool: {tool_name} | args: {args}")
